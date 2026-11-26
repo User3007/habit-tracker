@@ -5,9 +5,10 @@ type HabitListProps = {
   habits: Habit[];
   completedIds: Set<string>;
   onToggle: (id: string) => void;
+  savingIds: Set<string>;
 };
 
-export function HabitList({ habits, completedIds, onToggle }: HabitListProps) {
+export function HabitList({ habits, completedIds, onToggle, savingIds }: HabitListProps) {
   return (
     <section aria-labelledby="habits-heading" className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
       <div className="border-b border-stone-100 px-6 py-5 sm:px-8">
@@ -16,7 +17,7 @@ export function HabitList({ habits, completedIds, onToggle }: HabitListProps) {
       </div>
       <ul className="divide-y divide-stone-100">
         {habits.map((habit) => (
-          <HabitItem key={habit.id} habit={habit} completed={completedIds.has(habit.id)} onToggle={onToggle} />
+          <HabitItem key={habit.id} habit={habit} completed={completedIds.has(habit.id)} onToggle={onToggle} saving={savingIds.has(habit.id)} />
         ))}
       </ul>
     </section>

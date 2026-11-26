@@ -4,9 +4,9 @@ A simple habit tracker for building consistency, tracking daily habits, and view
 
 ## Current Status
 
-**Phase 1: Core dashboard complete**
+**Phase 2 complete: Supabase persistence and email authentication**
 
-The app currently uses mock data and local state. Habit completion resets when the page is refreshed.
+The Supabase migration is applied. Email/password authentication, the protected dashboard, persistent habits and daily logs, and cross-user RLS isolation have been verified.
 
 ## Features
 
@@ -17,11 +17,17 @@ The app currently uses mock data and local state. Habit completion resets when t
 - See daily progress
 - Responsive mobile-friendly dashboard
 
+### Phase 2 — Complete
+
+- Supabase database with row-level security
+- Email/password sign-up and sign-in
+- Protected dashboard and sign-out
+- Persistent habits and daily completion logs
+- Verified users cannot access other users' habits or logs
+
 ### Planned
 
-- Create and archive habits
-- Persistent data with Supabase
-- User authentication
+- Archive habits
 - Current and longest streaks
 - Completion statistics
 - Calendar heatmap
@@ -33,7 +39,7 @@ The app currently uses mock data and local state. Habit completion resets when t
 - TypeScript
 - Tailwind CSS
 - shadcn/ui
-- Supabase (planned)
+- Supabase (authentication and database)
 - Vercel (planned)
 
 ## Getting Started
@@ -43,6 +49,8 @@ Install dependencies:
 ```bash
 npm install
 ```
+
+Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` using your Supabase project settings. Review and run `supabase/migrations/001_init.sql` in the Supabase SQL Editor; the app does not apply migrations automatically. Enable the email provider and sign-ups in Supabase Auth. If email confirmation is enabled, configure the site URL and add `http://localhost:3000/auth/callback` to the allowed redirect URLs, then confirm the email in the same browser used to sign up.
 
 Start the development server:
 
@@ -61,16 +69,20 @@ src/
 ├── app/
 │   ├── globals.css
 │   ├── layout.tsx
+│   ├── login/
+│   ├── auth/callback/
 │   └── page.tsx
 ├── components/
 │   ├── ui/
 │   ├── daily-progress.tsx
 │   ├── habit-item.tsx
-│   └── habit-list.tsx
-└── lib/
-    ├── mock-data.ts
-    ├── types.ts
-    └── utils.ts
+│   ├── habit-list.tsx
+│   └── today-dashboard.tsx
+├── lib/
+│   ├── supabase/
+│   ├── types.ts
+│   └── utils.ts
+└── proxy.ts
 ```
 
 ## Development
@@ -95,7 +107,6 @@ npm run lint && npm run build
 
 ## Roadmap
 
-- [x] Phase 1: Dashboard UI
-- [x] Phase 1: Mock habit data
-- [x] Phase 1: Local habit toggling
-- [x] Phase 1:
+- [x] Phase 1: Dashboard UI with mock data
+- [x] Phase 2: Supabase, email authentication, persistent habits and logs, protected dashboard, and cross-user RLS isolation
+- [ ] Phase 3: Streaks, completion statistics, and calendar heatmap
