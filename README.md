@@ -2,55 +2,23 @@
 
 A simple habit tracker for building consistency, tracking daily habits, and viewing progress over time.
 
-## Current Status
+## Current status
 
-**Phase 2 complete: Supabase persistence and email authentication**
+Phase 2 is complete: the responsive Today dashboard supports email/password authentication, habit creation, and persistent daily completion. Cross-user isolation was manually verified on the configured Supabase project; a new project still requires the setup below.
 
-The Supabase migration is applied. Email/password authentication, the protected dashboard, persistent habits and daily logs, and cross-user RLS isolation have been verified.
+Built with Next.js, TypeScript, Tailwind CSS, shadcn/ui, and Supabase.
 
-## Features
+## Getting started
 
-### Phase 1
-
-- View today's habits
-- Mark habits as completed
-- See daily progress
-- Responsive mobile-friendly dashboard
-
-### Phase 2 — Complete
-
-- Supabase database with row-level security
-- Email/password sign-up and sign-in
-- Protected dashboard and sign-out
-- Persistent habits and daily completion logs
-- Verified users cannot access other users' habits or logs
-
-### Planned
-
-- Archive habits
-- Current and longest streaks
-- Completion statistics
-- Calendar heatmap
-- Dark mode
-
-## Tech Stack
-
-- Next.js
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Supabase (authentication and database)
-- Vercel (planned)
-
-## Getting Started
-
-Install dependencies:
+Requires Node.js 20.9 or later, npm, and a Supabase project. Install dependencies:
 
 ```bash
 npm install
 ```
 
-Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` using your Supabase project settings. Review and run `supabase/migrations/001_init.sql` in the Supabase SQL Editor; the app does not apply migrations automatically. Enable the email provider and sign-ups in Supabase Auth. If email confirmation is enabled, configure the site URL and add `http://localhost:3000/auth/callback` to the allowed redirect URLs, then confirm the email in the same browser used to sign up.
+1. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` using your Supabase project settings. Never commit credentials.
+2. Review and run [`001_init.sql`](supabase/migrations/001_init.sql) in the Supabase SQL Editor for a new project. The app does not apply migrations automatically; do not rerun it on an already initialized database.
+3. Enable the email provider and sign-ups in Supabase Auth. If email confirmation is enabled, configure the site URL, allow `http://localhost:3000/auth/callback` as a redirect URL, and confirm the email in the browser used to sign up.
 
 Start the development server:
 
@@ -64,51 +32,18 @@ Then open:
 
 For LAN access, open the computer's local IPv4 address on port 3000. The development server permits its current local IPv4 addresses; restart it if the address changes. HTTP does not encrypt passwords or session cookies, so use LAN access only on a trusted network. If signing up over LAN with email confirmation, also allow that origin's `/auth/callback` URL in Supabase Auth.
 
-## Project Structure
+## Validation
 
-```text
-src/
-├── app/
-│   ├── globals.css
-│   ├── layout.tsx
-│   ├── login/
-│   ├── auth/callback/
-│   └── page.tsx
-├── components/
-│   ├── ui/
-│   ├── daily-progress.tsx
-│   ├── habit-item.tsx
-│   ├── habit-list.tsx
-│   └── today-dashboard.tsx
-├── lib/
-│   ├── supabase/
-│   ├── types.ts
-│   └── utils.ts
-└── proxy.ts
-```
-
-## Development
-
-Run lint:
+For application changes, run:
 
 ```bash
 npm run lint
-```
-
-Create a production build:
-
-```bash
 npm run build
 ```
 
-Before committing:
+These checks do not verify live authentication, persistence, or row-level security. Test those behaviors against a configured Supabase project when relevant.
 
-```bash
-npm run lint && npm run build
-```
+## Documentation
 
-## Roadmap
-
-- [x] Phase 1: Dashboard UI with mock data
-- [x] Phase 2: Supabase, email authentication, persistent habits and logs, protected dashboard, and cross-user RLS isolation
-- [ ] Phase 3: Streaks, completion statistics, and calendar heatmap
+- [Current architecture](docs/architecture.md)
+- [Project progression and future ideas](docs/progression.md)
