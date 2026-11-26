@@ -62,6 +62,8 @@ Then open:
 
 `http://localhost:3000`
 
+For LAN access, open the computer's local IPv4 address on port 3000. The development server permits its current local IPv4 addresses; restart it if the address changes. HTTP does not encrypt passwords or session cookies, so use LAN access only on a trusted network. If signing up over LAN with email confirmation, also allow that origin's `/auth/callback` URL in Supabase Auth.
+
 ## Project Structure
 
 ```text
