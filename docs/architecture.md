@@ -3,7 +3,7 @@
 ## Application
 
 - Next.js App Router uses `src/app/page.tsx` for the protected dashboard, `src/app/login/page.tsx` for email/password sign-in and sign-up, and `src/app/auth/callback/route.ts` for email confirmation.
-- `src/components/today-dashboard.tsx` loads the user's active habits and logs for the browser's local calendar date, creates habits, and upserts completion state. Marking a habit incomplete stores `completed = false`; it does not delete the log. The habit-list, habit-item, and daily-progress components render the dashboard.
+- `src/components/today-dashboard.tsx` loads the user's habits and logs for active habits on the browser's local calendar date. It creates and edits habits, archives them after confirmation, and offers an archived-habits view for restoration. Archive and restore update only the `archived` flag; the dashboard reloads active habits and today's logs after archive or restore. Completion state is upserted; marking a habit incomplete stores `completed = false` rather than deleting the log. The habit-list, habit-item, and daily-progress components render the dashboard.
 - Browser and server Supabase clients live in `src/lib/supabase/`. The browser client manages session cookies; the server client uses Next.js cookies. `src/proxy.ts` refreshes sessions, propagates updated cookies, and redirects unauthenticated dashboard requests; the dashboard also checks verified claims.
 - The confirmation callback exchanges the authentication code for a session and writes its cookies to the redirect response. Sign-out uses Supabase's default global scope, which can revoke the user's other sessions.
 

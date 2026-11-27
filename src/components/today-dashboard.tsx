@@ -28,6 +28,7 @@ type HabitRow = {
   name: string;
   color: string;
   created_at: string;
+  archived: boolean;
 };
 
 function toHabit(row: HabitRow): Habit {
@@ -38,6 +39,8 @@ export function TodayDashboard({ userId }: { userId: string }) {
   const router = useRouter();
   const today = useSyncExternalStore(subscribeToDate, getLocalDate, getServerDate);
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [archivedHabits, setArchivedHabits] = useState<Habit[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [completedIds, setCompletedIds] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -48,6 +51,7 @@ export function TodayDashboard({ userId }: { userId: string }) {
   const [creating, setCreating] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [savingIds, setSavingIds] = useState<Set<string>>(() => new Set());
+  const busy = creating || savingIds.size > 0;
 
   useEffect(() => {
     if (!today) return;
@@ -59,9 +63,8 @@ export function TodayDashboard({ userId }: { userId: string }) {
       setLoadError("");
       const { data: habitRows, error: habitsError } = await supabase
         .from("habits")
-        .select("id, name, color, created_at")
+        .select("id, name, color, created_at, archived")
         .eq("user_id", userId)
-        .eq("archived", false)
         .order("created_at", { ascending: true });
       if (cancelled) return;
       if (habitsError) {
@@ -70,7 +73,8 @@ export function TodayDashboard({ userId }: { userId: string }) {
         return;
       }
 
-      const loadedHabits = (habitRows ?? []).map(toHabit);
+      const loadedHabits = (habitRows ?? []).filter((habit) => !habit.archived).map(toHabit);
+      const loadedArchivedHabits = (habitRows ?? []).filter((habit) => habit.archived).map(toHabit);
       const ids = loadedHabits.map((habit) => habit.id);
       const { data: logs, error: logsError } = ids.length
         ? await supabase.from("habit_logs").select("habit_id, completed").eq("date", today).in("habit_id", ids)
@@ -82,6 +86,7 @@ export function TodayDashboard({ userId }: { userId: string }) {
         return;
       }
       setHabits(loadedHabits);
+      setArchivedHabits(loadedArchivedHabits);
       setCompletedIds(new Set((logs ?? []).filter((log) => log.completed).map((log) => log.habit_id)));
       setLoading(false);
     }
@@ -93,13 +98,13 @@ export function TodayDashboard({ userId }: { userId: string }) {
   async function createHabit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedName = name.trim();
-    if (!trimmedName || creating) return;
+    if (!trimmedName || busy) return;
     setCreating(true);
     setError("");
     const { data, error: createError } = await createClient()
       .from("habits")
       .insert({ user_id: userId, name: trimmedName, color })
-      .select("id, name, color, created_at")
+      .select("id, name, color, created_at, archived")
       .single();
     if (createError) setError(createError.message);
     else {
@@ -110,7 +115,7 @@ export function TodayDashboard({ userId }: { userId: string }) {
   }
 
   async function toggleHabit(id: string) {
-    if (savingIds.has(id)) return;
+    if (busy) return;
     const completed = !completedIds.has(id);
     setSavingIds((previous) => new Set(previous).add(id));
     setError("");
@@ -131,6 +136,45 @@ export function TodayDashboard({ userId }: { userId: string }) {
       next.delete(id);
       return next;
     });
+  }
+
+  async function updateHabit(id: string, changes: { name: string; color: string } | { archived: boolean }) {
+    if (busy) return false;
+    if ("name" in changes) {
+      changes = { ...changes, name: changes.name.trim() };
+      if (!changes.name) {
+        setError("Habit name cannot be empty.");
+        return false;
+      }
+    }
+    setSavingIds((previous) => new Set(previous).add(id));
+    setError("");
+    const { data, error: updateError } = await createClient()
+      .from("habits")
+      .update(changes)
+      .eq("id", id)
+      .eq("user_id", userId)
+      .select("id, name, color, created_at, archived")
+      .single();
+    if (updateError) setError(updateError.message);
+    else if ("archived" in changes) {
+      setLoading(true);
+      setReload((value) => value + 1);
+    } else {
+      setHabits((previous) => previous.map((habit) => habit.id === id ? toHabit(data) : habit));
+    }
+    setSavingIds((previous) => {
+      const next = new Set(previous);
+      next.delete(id);
+      return next;
+    });
+    return !updateError;
+  }
+
+  function archiveHabit(habit: Habit) {
+    if (window.confirm(`Archive “${habit.name}”? Its completion history will be kept.`)) {
+      void updateHabit(habit.id, { archived: true });
+    }
   }
 
   async function signOut() {
@@ -175,7 +219,7 @@ export function TodayDashboard({ userId }: { userId: string }) {
         ) : (
           <>
             <DailyProgress completed={completedIds.size} total={habits.length} />
-            <HabitList habits={habits} completedIds={completedIds} onToggle={toggleHabit} savingIds={savingIds} />
+            <HabitList habits={habits} completedIds={completedIds} onToggle={toggleHabit} onEdit={(id, name, color) => updateHabit(id, { name, color })} onArchive={archiveHabit} savingIds={savingIds} busy={busy} />
             {habits.length === 0 && <p className="text-sm text-stone-500">No habits yet. Add one to get started.</p>}
             <form onSubmit={createHabit} className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
               <h2 className="text-lg font-semibold text-stone-900">Add a habit</h2>
@@ -188,11 +232,36 @@ export function TodayDashboard({ userId }: { userId: string }) {
                   Color
                   <input type="color" value={color} onChange={(event) => setColor(event.target.value)} className="mt-1 block h-10 w-12 cursor-pointer rounded border border-stone-300 bg-white p-1" />
                 </label>
-                <button type="submit" disabled={creating || !name.trim()} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
+                <button type="submit" disabled={busy || !name.trim()} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">
                   {creating ? "Adding…" : "Add habit"}
                 </button>
               </div>
             </form>
+            <section aria-labelledby="archived-heading" className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="archived-heading" className="text-lg font-semibold text-stone-900">Archived habits</h2>
+                <button type="button" aria-expanded={showArchived} aria-controls="archived-habits" onClick={() => setShowArchived((value) => !value)} className="text-sm font-semibold text-emerald-700 hover:text-emerald-800">
+                  {showArchived ? "Hide archived" : "View archived"}
+                </button>
+              </div>
+              {showArchived && (
+                <div id="archived-habits" className="mt-4">
+                  {archivedHabits.length === 0 ? <p className="text-sm text-stone-500">No archived habits.</p> : (
+                    <ul className="divide-y divide-stone-100">
+                      {archivedHabits.map((habit) => (
+                        <li key={habit.id} className="flex items-center gap-3 py-3">
+                          <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: habit.color }} />
+                          <span className="min-w-0 flex-1 break-words text-stone-800">{habit.name}</span>
+                          <button type="button" disabled={busy} onClick={() => void updateHabit(habit.id, { archived: false })} aria-label={`Restore ${habit.name}`} className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 disabled:opacity-50">
+                            {savingIds.has(habit.id) ? "Restoring…" : "Restore"}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </section>
           </>
         )}
         {error && <p role="alert" className="text-sm text-red-700">{error}</p>}

@@ -3,14 +3,11 @@
 - **Phase 1 — Complete:** responsive Today dashboard with mock data and local completion state.
 - **Phase 2 — Complete:** Supabase persistence, email/password authentication, protected dashboard, and cross-user RLS isolation.
 
-## Phase 3 — Habit Management (Proposed)
+## Phase 3 — Habit Management (Complete)
 
-- Edit habit name and color.
-- Validate habit input.
-- Archive with confirmation.
-- View archived habits.
-- Restore archived habits without losing logs.
-- Verify persistence and cross-user RLS isolation.
+- Edit habit name and color; reject empty names.
+- Archive with confirmation, view archived habits, and restore them without deleting logs.
+- Manual verification passed: persistence, completion history, loading and error states, and cross-user RLS isolation.
 
 ## Unapproved future work
 
